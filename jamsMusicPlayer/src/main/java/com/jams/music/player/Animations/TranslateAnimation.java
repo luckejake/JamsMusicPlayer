@@ -52,7 +52,6 @@ public class TranslateAnimation extends android.view.animation.TranslateAnimatio
 		mDuration = duration;
 		mFinalVisibility = finalVisibility;
 		mInterpolator = interpolator;
-		
 	}
 	
 	/**
@@ -74,7 +73,6 @@ public class TranslateAnimation extends android.view.animation.TranslateAnimatio
 		mFinalVisibility = finalVisibility;
 		mNewImageResourceId = newImageResourceId;
 		mInterpolator = interpolator;
-		
 	}
 	
 	/**
@@ -82,10 +80,7 @@ public class TranslateAnimation extends android.view.animation.TranslateAnimatio
 	 */
 	public void animate() {
 		
-		if (mView==null)
-			return;
-		
-		if (mDuration==0)
+		if ( mView == null || mDuration == 0 )
 			return;
 
 		//Set the animation parameters.
@@ -93,7 +88,6 @@ public class TranslateAnimation extends android.view.animation.TranslateAnimatio
 		this.setDuration(mDuration);
 		this.setInterpolator(mInterpolator);
 		mView.startAnimation(this);
-
 	}
 	
 	/**
@@ -107,21 +101,16 @@ public class TranslateAnimation extends android.view.animation.TranslateAnimatio
 			
 			if (mChangeImageResource && (mView instanceof ImageView))
 				((ImageView) mView).setImageResource(mNewImageResourceId);
-			
 		}
 
 		@Override
 		public void onAnimationRepeat(Animation arg0) {
 			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onAnimationStart(Animation arg0) {
 			// TODO Auto-generated method stub
-			
 		}
-		
 	};
-
 }

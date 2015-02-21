@@ -21,8 +21,7 @@ import android.view.animation.Animation;
 import android.view.animation.Interpolator;
 
 /**
- * Fade animation class. Pass in any view to apply 
- * the animation.
+ * Fade animation class. Pass in any view to apply the animation.
  * 
  * @author Saravan Pantham
  */
@@ -47,82 +46,63 @@ public class FadeAnimation extends AlphaAnimation {
 	}
 
 	/**
-	 * Performs the fade animation.
+	 * Performs the fade animation.  Will fade out and fade in based on whether from alpha is greater
+	 * than to alpha.
 	 */
 	public void animate() {
-		
-		if (mView==null)
+		if( mView == null || mFromAlpha == mToAlpha || mDuration == 0 )
 			return;
-		
-		if (mFromAlpha==mToAlpha)
-			return;
-		
-		if (mDuration==0)
-			return;
-		
-		//Set the animation parameters.
-		if (mFromAlpha > mToAlpha)
-			//Fade out animation.
-			this.setAnimationListener(fadeOutListener);
-		else
-			//Fade in animation.
-			this.setAnimationListener(fadeInListener);
-		
-		this.setDuration(mDuration);
-        if (mInterpolator!=null)
-		    this.setInterpolator(mInterpolator);
-		mView.startAnimation(this);
 
+		if( mFromAlpha > mToAlpha )
+			this.setAnimationListener( fadeOutListener );
+		else
+			this.setAnimationListener( fadeInListener );
+		
+		setDuration( mDuration );
+
+        if( mInterpolator != null )
+		    this.setInterpolator( mInterpolator );
+
+		mView.startAnimation(this);
 	}
 	
 	/**
 	 * Fade in animation listener.
 	 */
 	private AnimationListener fadeInListener = new AnimationListener() {
-
 		@Override
 		public void onAnimationEnd(Animation arg0) {
-			mView.setVisibility(View.VISIBLE);
-			
+			mView.setVisibility( View.VISIBLE );
 		}
 
 		@Override
-		public void onAnimationRepeat(Animation arg0) {
+		public void onAnimationRepeat( Animation arg0 ) {
 			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
-		public void onAnimationStart(Animation arg0) {
-			mView.setVisibility(View.INVISIBLE);
-			
+		public void onAnimationStart( Animation arg0 ) {
+			mView.setVisibility( View.INVISIBLE );
 		}
-		
 	};
 	
 	/**
 	 * Fade out animation listener.
 	 */
 	private AnimationListener fadeOutListener = new AnimationListener() {
-
 		@Override
-		public void onAnimationEnd(Animation arg0) {
-			mView.setVisibility(View.INVISIBLE);
-			
+		public void onAnimationEnd( Animation arg0 ) {
+			mView.setVisibility( View.INVISIBLE );
 		}
 
 		@Override
-		public void onAnimationRepeat(Animation arg0) {
+		public void onAnimationRepeat( Animation arg0 ) {
 			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
-		public void onAnimationStart(Animation arg0) {
-			mView.setVisibility(View.VISIBLE);
-			
+		public void onAnimationStart( Animation arg0 ) {
+			mView.setVisibility( View.VISIBLE );
 		}
-		
 	};
-	
 }
