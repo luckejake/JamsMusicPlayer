@@ -271,72 +271,108 @@ public class AsyncAddSongsToPlaylistTask extends AsyncTask<String, Integer, Bool
         	
     }
     
-    private void addSongToPlaylist(ContentResolver resolver, long audioId, long playlistId) {
+    private void addSongToPlaylist( ContentResolver resolver, long audioId, long playlistId ) {
 
         String[] cols = new String[] {
                 "count(*)"
         };
         
-        Uri uri = MediaStore.Audio.Playlists.Members.getContentUri("external", playlistId);
-        Cursor cur = resolver.query(uri, cols, null, null, null);
+        Uri uri = MediaStore.Audio.Playlists.Members.getContentUri( "external", playlistId );
+        Cursor cur = resolver.query( uri, cols, null, null, null );
+
         cur.moveToFirst();
-        final int base = cur.getInt(0);
+
+        final int base = cur.getInt( 0 );
+
         cur.close();
+
         ContentValues values = new ContentValues();
-        values.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, Long.valueOf(base + audioId));
-        values.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, audioId);
+
+        values.put( MediaStore.Audio.Playlists.Members.PLAY_ORDER, Long.valueOf( base + audioId ));
+        values.put( MediaStore.Audio.Playlists.Members.AUDIO_ID, audioId );
+
         resolver.insert(uri, values);
     }
-    
+
+	// todo: load from xml
+	public static final String _AND = " AND ";
+	public static final String _EQUALS = " = ";
+
+	private String quote( String quotedString ) {
+		return " '" + quotedString + "' ";
+	}
+
+	// With a better name and maybe another argument, might be a utility.
+	private String concat( String... args) {
+		String result = "";
+
+		for( String arg : args ) {
+			result = result + arg;
+		}
+
+		return result;
+	}
+
+	private String selectAlbum( String album ) {
+		return concat(MediaStore.Audio.AudioColumns.ALBUM, _EQUALS, quote( album ));
+	}
+
+	private String selectArtist( String artist ) {
+		return concat(MediaStore.Audio.AudioColumns.ARTIST, _EQUALS, quote( artist ));
+	}
+
+	private String selectTitle( String title ) {
+		return concat(MediaStore.Audio.AudioColumns.TITLE, _EQUALS, quote( title ));
+	}
+
+	private String escapeQuote( String value ) {
+		return value.replace("'", "''");
+	}
+
     private long getSongAudioId(String artist, String album, String title) {
-    	artist = artist.replace("'", "''");
-    	album = album.replace("'", "''");
-    	title = title.replace("'", "''");
+    	artist = escapeQuote( artist ); // artist.replace("'", "''");
+    	album = escapeQuote( album ); // album.replace("'", "''");
+    	title = escapeQuote( title ); /// title.replace("'", "''");
+
+		// TODO: review the quoting scheme for ContentResolver query and update this code.
+    	String selection = selectAlbum( album ) + _AND + selectArtist( artist ) + _AND + selectTitle( title );
+
+    	Cursor cursor = mContext.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, selection, null, null);
     	
-    	String selection = MediaStore.Audio.AudioColumns.ALBUM + "=" + "'" + album + "'" + " AND "
-    					 + MediaStore.Audio.AudioColumns.ARTIST + "=" + "'" + artist + "'" + " AND "
-    					 + MediaStore.Audio.AudioColumns.TITLE + "=" + "'" + title + "'";
-    	
-    	Cursor cursor = mContext.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, 
-    														null, 
-    														selection, 
-    														null,
-    														null);
-    	
-    	if (cursor!=null && cursor.getCount() > 0) {
+    	if ( cursor != null && cursor.getCount() > 0 ) {
     		cursor.moveToFirst();
-    		return cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media._ID));
-    	} else {
+    		return cursor.getLong( cursor.getColumnIndex( MediaStore.Audio.Media._ID ));
+    	}
+		else {
     		return -1;
     	}
-    	
     }
     
     @Override
     protected void onProgressUpdate(Integer... values) {
-    	super.onProgressUpdate(values);
-    	switch(values[0]) {
-    	case 0:
-    		//Common.displayToast(R.string.playlist_created, Toast.LENGTH_SHORT);
-    		Toast.makeText(mContext, R.string.playlist_modified, Toast.LENGTH_SHORT).show();
-    		break;
-    	case 1:
-    		//Common.displayToast(R.string.playlist_could_not_be_created, Toast.LENGTH_SHORT);
-    		Toast.makeText(mContext, R.string.playlist_could_not_be_modified, Toast.LENGTH_SHORT).show();
-    		break;
-    	}
-    	
+    	super.onProgressUpdate( values );
+
+		int messageId = -1;
+
+    	switch( values[ 0 ] ) {
+			case 0:
+				messageId = R.string.playlist_modified;
+				break;
+			case 1:
+				messageId = R.string.playlist_could_not_be_modified;
+				break;
+		}
+
+		Toast.makeText( mContext, mContext.getString( messageId ), Toast.LENGTH_SHORT ).show();
     }
     
     @Override
-	protected void onPostExecute(Boolean result) {
-		super.onPostExecute(result);
+	protected void onPostExecute( Boolean result ) {
+		super.onPostExecute( result );
     	
-    	if (mCursor!=null) {
+    	if ( mCursor != null ) {
     		mCursor.close();
         	mCursor = null;
     	}
-    
 	}
-
 }
