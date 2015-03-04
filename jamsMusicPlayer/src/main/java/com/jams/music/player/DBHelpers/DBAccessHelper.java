@@ -134,7 +134,6 @@ public class DBAccessHelper extends SQLiteOpenHelper {
 	public DBAccessHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
 		mApp = (Common) context.getApplicationContext();
-		
 	}
 	
 	/**

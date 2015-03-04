@@ -214,7 +214,105 @@ public class FilesFoldersFragment extends Fragment {
 
         listView.startAnimation(animation);
     }
-    
+
+	// TODO: Move to UsefulStrings class.
+	private static boolean anyEqualsIgnoreCase( String primary, String[] args ) {
+		return testEquality( StringCase.EQUALS_IGNORE_CASE, primary, args );
+	}
+
+	private static boolean anyEquals( String primary, String[] args ) {
+		return testEquality( StringCase.EQUALS, primary, args );
+	}
+
+	public enum StringCase { EQUALS, EQUALS_IGNORE_CASE }
+
+	private static boolean testEquality( StringCase test, String primary, String[] args ) {
+		boolean result = false;
+
+		for( String arg : args ) {
+			switch (test) {
+				case EQUALS:
+					result = primary.equals(arg);
+					break;
+				case EQUALS_IGNORE_CASE:
+					result = primary.equalsIgnoreCase(arg);
+					break;
+				default:
+					break;
+			}
+
+			if( result ) {
+				break;
+			}
+		}
+
+		return result;
+	}
+
+	/*
+	 * Starting with Android 4.2, /storage/emulated/legacy/...
+	 * is a symlink that points to the actual directory where
+	 * the user's files are stored. We need to detect the
+	 * actual directory's file path here.
+	 */
+	// todo: Android utility.
+	public String getCorrectFilePath( File file ) {
+		String filePath;
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
+			filePath = getRealFilePath(file.getAbsolutePath());
+		else
+			filePath = file.getAbsolutePath();
+
+		return filePath;
+	}
+
+	public void updateDirectoryDetails( File file ) {
+		String filePath = getCorrectFilePath( file );
+
+		fileFolderPathList.add(filePath);
+		fileFolderNameList.add(file.getName());
+		File[] listOfFiles = file.listFiles();
+
+		if (listOfFiles!=null) {
+			fileFolderTypeList.add(FOLDER);
+			if (listOfFiles.length==1) {
+				fileFolderSizeList.add("" + listOfFiles.length + " item");
+			} else {
+				fileFolderSizeList.add("" + listOfFiles.length + " items");
+			}
+
+		} else {
+			fileFolderTypeList.add(FOLDER);
+			fileFolderSizeList.add("Unknown items");
+		}
+	}
+
+	public void updateFileFolderType( File file, String extension ) {
+		//Add the file element to fileFolderTypeList based on the file type.
+		if( anyEqualsIgnoreCase( extension, getResources().getStringArray( R.array.extensions_file_music ))) {
+			//The file is an audio file.
+			fileFolderTypeList.add(AUDIO_FILE);
+			fileFolderSizeList.add("" + getFormattedFileSize(file.length()));
+		}
+		else if( anyEqualsIgnoreCase( extension, getResources().getStringArray( R.array.extensions_file_images))) {
+			//The file is a picture file.
+			fileFolderTypeList.add(PICTURE_FILE);
+			fileFolderSizeList.add("" + getFormattedFileSize(file.length()));
+		}
+		else if( anyEqualsIgnoreCase( extension, getResources().getStringArray( R.array.extensions_file_videos ))) {
+			//The file is a video file.
+			fileFolderTypeList.add(VIDEO_FILE);
+			fileFolderSizeList.add("" + getFormattedFileSize(file.length()));
+
+		} else {
+			//We don't have an icon for this file type so give it the generic file flag.
+			fileFolderTypeList.add(FILE);
+			fileFolderSizeList.add("" + getFormattedFileSize(file.length()));
+		}
+
+	}
+
     /**
      * Retrieves the folder hierarchy for the specified folder.
      *
@@ -238,52 +336,21 @@ public class FilesFoldersFragment extends Fragment {
 		File[] files = f.listFiles();
 		 
 		if (files!=null) {
-			
-			//Sort the files by name.
-			Arrays.sort(files, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);
+			Arrays.sort(files, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);  // Sort files by name.
 			
 			for(int i=0; i < files.length; i++) {
-				
 				File file = files[i];
+
 				if(file.isHidden()==SHOW_HIDDEN_FILES && file.canRead()) {
-					
 					if (file.isDirectory()) {
-
-                        /*
-						 * Starting with Android 4.2, /storage/emulated/legacy/...
-						 * is a symlink that points to the actual directory where
-						 * the user's files are stored. We need to detect the
-						 * actual directory's file path here.
-						 */
-                        String filePath;
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
-                            filePath = getRealFilePath(file.getAbsolutePath());
-                        else
-                            filePath = file.getAbsolutePath();
-
-                        fileFolderPathList.add(filePath);
-						fileFolderNameList.add(file.getName());
-						File[] listOfFiles = file.listFiles();
-						
-						if (listOfFiles!=null) {
-							fileFolderTypeList.add(FOLDER);
-							if (listOfFiles.length==1) {
-								fileFolderSizeList.add("" + listOfFiles.length + " item");
-							} else {
-								fileFolderSizeList.add("" + listOfFiles.length + " items");
-							}
-							
-						} else {
-							fileFolderTypeList.add(FOLDER);
-							fileFolderSizeList.add("Unknown items");
-						}
-						
-					} else {
-						
+						updateDirectoryDetails( file );
+					}
+					else {
 						try {
 							String path = file.getCanonicalPath();
 							fileFolderPathList.add(path);
-						} catch (IOException e) {
+						}
+						catch (IOException e) {
 							continue;
 						}
 						
@@ -291,70 +358,15 @@ public class FilesFoldersFragment extends Fragment {
 						String fileName = "";
 						try {
 							fileName = file.getCanonicalPath();
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
+						}
+						catch (IOException e) {
 							e.printStackTrace();
 						}
-						
-						//Add the file element to fileFolderTypeList based on the file type.
-						if (getFileExtension(fileName).equalsIgnoreCase("mp3") ||
-							getFileExtension(fileName).equalsIgnoreCase("3gp") ||
-							getFileExtension(fileName).equalsIgnoreCase("mp4") ||
-							getFileExtension(fileName).equalsIgnoreCase("m4a") ||
-							getFileExtension(fileName).equalsIgnoreCase("aac") ||
-							getFileExtension(fileName).equalsIgnoreCase("ts") ||
-							getFileExtension(fileName).equalsIgnoreCase("flac") ||
-							getFileExtension(fileName).equalsIgnoreCase("mid") ||
-							getFileExtension(fileName).equalsIgnoreCase("xmf") ||
-							getFileExtension(fileName).equalsIgnoreCase("mxmf") ||
-							getFileExtension(fileName).equalsIgnoreCase("midi") ||
-							getFileExtension(fileName).equalsIgnoreCase("rtttl") ||
-							getFileExtension(fileName).equalsIgnoreCase("rtx") ||
-							getFileExtension(fileName).equalsIgnoreCase("ota") ||
-							getFileExtension(fileName).equalsIgnoreCase("imy") ||
-							getFileExtension(fileName).equalsIgnoreCase("ogg") ||
-							getFileExtension(fileName).equalsIgnoreCase("mkv") ||
-							getFileExtension(fileName).equalsIgnoreCase("wav")) {
-							
-							//The file is an audio file.
-							fileFolderTypeList.add(AUDIO_FILE);
-							fileFolderSizeList.add("" + getFormattedFileSize(file.length()));
-							
-						} else if (getFileExtension(fileName).equalsIgnoreCase("jpg") ||
-								   getFileExtension(fileName).equalsIgnoreCase("gif") ||
-								   getFileExtension(fileName).equalsIgnoreCase("png") ||
-								   getFileExtension(fileName).equalsIgnoreCase("bmp") ||
-								   getFileExtension(fileName).equalsIgnoreCase("webp")) {
-							
-							//The file is a picture file.
-							fileFolderTypeList.add(PICTURE_FILE);
-							fileFolderSizeList.add("" + getFormattedFileSize(file.length()));
-							
-						} else if (getFileExtension(fileName).equalsIgnoreCase("3gp") ||
-								   getFileExtension(fileName).equalsIgnoreCase("mp4") ||
-								   getFileExtension(fileName).equalsIgnoreCase("3gp") ||
-								   getFileExtension(fileName).equalsIgnoreCase("ts") ||
-								   getFileExtension(fileName).equalsIgnoreCase("webm") ||
-								   getFileExtension(fileName).equalsIgnoreCase("mkv")) {
-							
-							//The file is a video file.
-							fileFolderTypeList.add(VIDEO_FILE);
-							fileFolderSizeList.add("" + getFormattedFileSize(file.length()));
-							
-						} else {
-							
-							//We don't have an icon for this file type so give it the generic file flag.
-							fileFolderTypeList.add(FILE);
-							fileFolderSizeList.add("" + getFormattedFileSize(file.length()));
-							
-						}
 
+						updateFileFolderType( file, getFileExtension( fileName ));
 					}
-					
-				} 
-			
+				}
 			}
-			
 		}
 		
 		FoldersListViewAdapter foldersListViewAdapter = new FoldersListViewAdapter(getActivity(),
@@ -417,6 +429,10 @@ public class FilesFoldersFragment extends Fragment {
         getDir(currentDir, listView.onSaveInstanceState());
     }
 
+	public String[] fromStringArray( int id ) {
+		return getResources().getStringArray( id );
+	}
+
     /**
      * Resolves the /storage/emulated/legacy paths to
      * their true folder path representations. Required
@@ -424,22 +440,13 @@ public class FilesFoldersFragment extends Fragment {
      */
     @SuppressLint("SdCardPath")
     private String getRealFilePath(String filePath) {
+		String result = filePath;
 
-        if (filePath.equals("/storage/emulated/0") ||
-                filePath.equals("/storage/emulated/0/") ||
-                filePath.equals("/storage/emulated/legacy") ||
-                filePath.equals("/storage/emulated/legacy/") ||
-                filePath.equals("/storage/sdcard0") ||
-                filePath.equals("/storage/sdcard0/") ||
-                filePath.equals("/sdcard") ||
-                filePath.equals("/sdcard/") ||
-                filePath.equals("/mnt/sdcard") ||
-                filePath.equals("/mnt/sdcard/")) {
+		if( anyEquals( filePath, fromStringArray( R.array.valid_file_paths ) )) {
+			result = Environment.getExternalStorageDirectory().toString();
+		}
 
-            return Environment.getExternalStorageDirectory().toString();
-        }
-
-        return filePath;
+        return result;
     }
 
     /**
@@ -472,28 +479,27 @@ public class FilesFoldersFragment extends Fragment {
     public String getFormattedFileSize(final long value) {
     	
     	final long[] dividers = new long[] { teraBytes, gigaBytes, megaBytes, kiloBytes, 1 };
-        final String[] units = new String[] { "TB", "GB", "MB", "KB", "bytes" };
-        
-        if(value < 1) {
-        	return "";
-        }
-        
-        String result = null;
-        for(int i = 0; i < dividers.length; i++) {
-            final long divider = dividers[i];
-            if(value >= divider) {
-                result = format(value, divider, units[i]);
-                break;
-            }
-            
-        }
-        
+        final String[] units = fromStringArray( R.array.file_size_abbrevs );
+		String result = null;
+
+        if(value >= 1) {
+			for (int i = 0; i < dividers.length; i++) {
+				final long divider = dividers[i];
+				if (value >= divider) {
+					result = format(value, divider, units[i]);
+					break;
+				}
+
+			}
+		}
+
         return result;
     }
 
     public String format(final long value, final long divider, final String unit) {
         final double result = divider > 1 ? (double) value / (double) divider : (double) value;
-        
+
+		// todo: formatting numbers -research.
         return new DecimalFormat("#,##0.#").format(result) + " " + unit;
     }
     
@@ -514,23 +520,17 @@ public class FilesFoldersFragment extends Fragment {
         File root = new File(path);
         File[] list = root.listFiles();
 
-        if (list==null) {
-        	return;
-        }
+        if (list!=null) {
+			for (File f : list) {
+				if (f.isDirectory()) {
+					iterateThruFolder(f.getAbsolutePath());
 
-        for (File f : list) {
-        	
-            if (f.isDirectory()) {
-                iterateThruFolder(f.getAbsolutePath());
-                
-                if (!subdirectoriesList.contains(f.getPath())) {
-                	subdirectoriesList.add(f.getPath());
-                }
-                    
-            }
-            
-        }
-        
+					if (!subdirectoriesList.contains(f.getPath())) {
+						subdirectoriesList.add(f.getPath());
+					}
+				}
+			}
+		}
     }
     
     /**
@@ -706,7 +706,6 @@ public class FilesFoldersFragment extends Fragment {
     	super.onDestroyView();
     	mContext = null;
     	listView = null;
-
     }
     
     /*

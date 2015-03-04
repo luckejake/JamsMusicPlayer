@@ -99,18 +99,15 @@ public class AsyncApplyEQToAlbumTask extends AsyncTask<String, Void, Void> {
 				String songId = songsCursor.getString(songsCursor.getColumnIndex(DBAccessHelper.SONG_ID));
 				
 				saveSettingsToDB(songId);
-				
 			}
-			
 		}
 		
 		cursor.close();
 		songsCursor.close();
     	
     	return null;
-	    
     }
-    
+
 	/** 
 	 * Commit the settings to the database 
 	 */

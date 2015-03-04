@@ -24,11 +24,13 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.media.audiofx.PresetReverb;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
@@ -63,6 +65,15 @@ import com.jams.music.player.Utils.Common;
 import com.jams.music.player.Views.VerticalSeekBar;
 
 public class EqualizerActivity extends FragmentActivity {
+
+	// Equalizer values used in ChangeListeners.
+	private final int HZ_50 =      50000;
+	private final int HZ_130 =    130000;
+	private final int HZ_320 =    320000;
+	private final int HZ_800 =    800000;
+	private final int KHZ_2 =    2000000;
+	private final int KHZ_5 =    5000000;
+	private final int KHZ_12_5 = 9000000;
 
 	//Context.
 	protected Context mContext;
@@ -107,6 +118,14 @@ public class EqualizerActivity extends FragmentActivity {
 	private TextView text12_5kHzGainTextView;
 	private TextView text12_5kHz;
 
+	private VerticalSeekBar[] equalizerSeekBars = new VerticalSeekBar[] { equalizer50HzSeekBar, equalizer130HzSeekBar,
+			equalizer320HzSeekBar, equalizer800HzSeekBar, equalizer2kHzSeekBar, equalizer5kHzSeekBar, equalizer12_5kHzSeekBar };
+
+	private TextView[] gainTextViews = new TextView[] { text50HzGainTextView, text130HzGainTextView, text320HzGainTextView,
+			text800HzGainTextView, text2kHzGainTextView, text5kHzGainTextView, text12_5kHzGainTextView };
+
+	private TextView[] textViews = new TextView[] { text50Hz, text130Hz, text320Hz, text800Hz, text2kHz, text5kHz, text12_5kHz };
+
 	// Equalizer preset controls.
 	private RelativeLayout loadPresetButton;
 	private RelativeLayout saveAsPresetButton;
@@ -128,7 +147,9 @@ public class EqualizerActivity extends FragmentActivity {
 	private int virtualizerLevel;
 	private int bassBoostLevel;
 	private int reverbSetting;
-	
+
+	private EqualizerData _equalizerData;
+
 	//Audio FX elements.
 	private SeekBar virtualizerSeekBar;
 	private SeekBar bassBoostSeekBar;
@@ -139,6 +160,52 @@ public class EqualizerActivity extends FragmentActivity {
 
     //Misc flags.
     private boolean mDoneButtonPressed = false;
+
+	public void initTextView( TextView textView, String fontFace, int paintFlags, int textColor ) {
+		textView.setTypeface( TypefaceHelper.getTypeface( mContext, fontFace ));
+		textView.setPaintFlags( textView.getPaintFlags() | paintFlags );
+		textView.setTextColor( textColor );
+	}
+
+	public void initTextViews( TextView[] textViews, String fontFace, int paintFlags, int textColor ) {
+		for( TextView textView : textViews ) {
+			initTextView( textView, fontFace, textView.getPaintFlags() | paintFlags, textColor );
+		}
+	}
+
+	public void loadControls() {
+		//Equalizer container elements.
+		mScrollView = (ScrollView) findViewById(R.id.equalizerScrollView);
+		mScrollView.setBackgroundColor(UIElementsHelper.getBackgroundColor(mContext));
+
+		int[] arrayDefinitions = new int[] { R.array.controls_50Hz, R.array.controls_130Hz, R.array.controls_320Hz,
+				R.array.controls_800Hz, R.array.controls_2kHz, R.array.controls_5kHz, R.array.controls_12_5kHz };
+
+		for( int x = 0; x < arrayDefinitions.length; x++ ) {
+			// initEqualizerControl( arrayDefinitions[ x ], x );
+			int[] defs = getResources().getIntArray( arrayDefinitions[ x ] );
+
+			equalizerSeekBars[ x ] = (VerticalSeekBar) findViewById( defs[ 0 ] );
+			gainTextViews[ x ] = (TextView) findViewById( defs[ 1 ] );
+			textViews[ x ] = (TextView) findViewById( defs[ 2 ] );
+		}
+
+		//Equalizer preset controls.
+		loadPresetButton = (RelativeLayout) findViewById(R.id.loadPresetButton);
+		saveAsPresetButton = (RelativeLayout) findViewById(R.id.saveAsPresetButton);
+		resetAllButton = (RelativeLayout) findViewById(R.id.resetAllButton);
+		loadPresetText = (TextView) findViewById(R.id.load_preset_text);
+		savePresetText = (TextView) findViewById(R.id.save_as_preset_text);
+		resetAllText = (TextView) findViewById(R.id.reset_all_text);
+
+		//Audio FX elements.
+		virtualizerSeekBar = (SeekBar) findViewById(R.id.virtualizer_seekbar);
+		bassBoostSeekBar = (SeekBar) findViewById(R.id.bass_boost_seekbar);
+		reverbSpinner = (Spinner) findViewById(R.id.reverb_spinner);
+		virtualizerTitle = (TextView) findViewById(R.id.virtualizer_title_text);
+		bassBoostTitle = (TextView) findViewById(R.id.bass_boost_title_text);
+		reverbTitle = (TextView) findViewById(R.id.reverb_title_text);
+	}
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -151,123 +218,33 @@ public class EqualizerActivity extends FragmentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.fragment_equalizer);
 
-        //Equalizer container elements.
-        mScrollView = (ScrollView) findViewById(R.id.equalizerScrollView);
-        mScrollView.setBackgroundColor(UIElementsHelper.getBackgroundColor(mContext));
+		loadControls();
 
-        //50Hz equalizer controls.
-        equalizer50HzSeekBar = (VerticalSeekBar) findViewById(R.id.equalizer50Hz);
-        text50HzGainTextView = (TextView) findViewById(R.id.text50HzGain);
-        text50Hz = (TextView) findViewById(R.id.text50Hz);
+		int paintFlags = Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG;
+		int textColor = UIElementsHelper.getSmallTextColor( mContext );
+		String fontFace = "RobotoCondensed-Regular";
+		int allPaintFlags;
 
-        //130Hz equalizer controls.
-        equalizer130HzSeekBar = (VerticalSeekBar) findViewById(R.id.equalizer130Hz);
-        text130HzGainTextView = (TextView) findViewById(R.id.text130HzGain);
-        text130Hz = (TextView) findViewById(R.id.text130Hz);
-
-        //320Hz equalizer controls.
-        equalizer320HzSeekBar = (VerticalSeekBar) findViewById(R.id.equalizer320Hz);
-        text320HzGainTextView = (TextView) findViewById(R.id.text320HzGain);
-        text320Hz = (TextView) findViewById(R.id.text320Hz);
-
-        //800Hz equalizer controls.
-        equalizer800HzSeekBar = (VerticalSeekBar) findViewById(R.id.equalizer800Hz);
-        text800HzGainTextView = (TextView) findViewById(R.id.text800HzGain);
-        text800Hz = (TextView) findViewById(R.id.text800Hz);
-
-        //2kHz equalizer controls.
-        equalizer2kHzSeekBar = (VerticalSeekBar) findViewById(R.id.equalizer2kHz);
-        text2kHzGainTextView = (TextView) findViewById(R.id.text2kHzGain);
-        text2kHz = (TextView) findViewById(R.id.text2kHz);
-
-        //5kHz equalizer controls.
-        equalizer5kHzSeekBar = (VerticalSeekBar) findViewById(R.id.equalizer5kHz);
-        text5kHzGainTextView = (TextView) findViewById(R.id.text5kHzGain);
-        text5kHz = (TextView) findViewById(R.id.text5kHz);
-
-        //12.5kHz equalizer controls.
-        equalizer12_5kHzSeekBar = (VerticalSeekBar) findViewById(R.id.equalizer12_5kHz);
-        text12_5kHzGainTextView = (TextView) findViewById(R.id.text12_5kHzGain);
-        text12_5kHz = (TextView) findViewById(R.id.text12_5kHz);
-
-        //Equalizer preset controls.
-        loadPresetButton = (RelativeLayout) findViewById(R.id.loadPresetButton);
-        saveAsPresetButton = (RelativeLayout) findViewById(R.id.saveAsPresetButton);
-        resetAllButton = (RelativeLayout) findViewById(R.id.resetAllButton);
-        loadPresetText = (TextView) findViewById(R.id.load_preset_text);
-        savePresetText = (TextView) findViewById(R.id.save_as_preset_text);
-        resetAllText = (TextView) findViewById(R.id.reset_all_text);
-
-        //Audio FX elements.
-        virtualizerSeekBar = (SeekBar) findViewById(R.id.virtualizer_seekbar);
-        bassBoostSeekBar = (SeekBar) findViewById(R.id.bass_boost_seekbar);
-        reverbSpinner = (Spinner) findViewById(R.id.reverb_spinner);
-        virtualizerTitle = (TextView) findViewById(R.id.virtualizer_title_text);
-        bassBoostTitle = (TextView) findViewById(R.id.bass_boost_title_text);
-        reverbTitle = (TextView) findViewById(R.id.reverb_title_text);
-
-        text50HzGainTextView.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text130HzGainTextView.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text320HzGainTextView.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text800HzGainTextView.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text2kHzGainTextView.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text5kHzGainTextView.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text12_5kHzGainTextView.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text50Hz.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text130Hz.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text320Hz.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text800Hz.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text2kHz.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text5kHz.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        text12_5kHz.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
+		initTextViews( gainTextViews, fontFace, paintFlags, textColor );
+		initTextViews( textViews, fontFace, paintFlags, textColor );
 
         loadPresetText.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Bold"));
         savePresetText.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Bold"));
         resetAllText.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Bold"));
 
-        text50HzGainTextView.setPaintFlags(text50HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text130HzGainTextView.setPaintFlags(text130HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text320HzGainTextView.setPaintFlags(text320HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text800HzGainTextView.setPaintFlags(text130HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text2kHzGainTextView.setPaintFlags(text320HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text5kHzGainTextView.setPaintFlags(text130HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text12_5kHzGainTextView.setPaintFlags(text320HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text50Hz.setPaintFlags(text50Hz.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text130Hz.setPaintFlags(text130Hz.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text320Hz.setPaintFlags(text320Hz.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text800Hz.setPaintFlags(text800Hz.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text2kHz.setPaintFlags(text2kHz.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text5kHz.setPaintFlags(text5kHz.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        text12_5kHz.setPaintFlags(text12_5kHz.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-
-        loadPresetText.setPaintFlags(text50HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        savePresetText.setPaintFlags(text50HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-        resetAllText.setPaintFlags(text50HzGainTextView.getPaintFlags() | Paint.SUBPIXEL_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-
-        text50HzGainTextView.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text130HzGainTextView.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text320HzGainTextView.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text800HzGainTextView.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text2kHzGainTextView.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text5kHzGainTextView.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text12_5kHzGainTextView.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text50Hz.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text130Hz.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text320Hz.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text800Hz.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text2kHz.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text5kHz.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        text12_5kHz.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
+        loadPresetText.setPaintFlags(text50HzGainTextView.getPaintFlags() | paintFlags );
+        savePresetText.setPaintFlags(text50HzGainTextView.getPaintFlags() | paintFlags );
+        resetAllText.setPaintFlags(text50HzGainTextView.getPaintFlags() | paintFlags );
 
         //Init reverb presets.
         ArrayList<String> reverbPresets = new ArrayList<String>();
-        reverbPresets.add("None");
-        reverbPresets.add("Large Hall");
-        reverbPresets.add("Large Room");
-        reverbPresets.add("Medium Hall");
-        reverbPresets.add("Medium Room");
-        reverbPresets.add("Small Room");
-        reverbPresets.add("Plate");
+
+		// Todo: Move to strings.xml
+		String[] reverbPresetNames = new String[] { "None", "Large Hall", "Large Room", "Medium Hall", "Medium Room", "Small Room", "Plate" };
+
+		for( String presetName : reverbPresetNames ) {
+			reverbPresets.add( presetName );
+		}
 
         ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, reverbPresets);
         dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -277,30 +254,22 @@ public class EqualizerActivity extends FragmentActivity {
         virtualizerSeekBar.setMax(1000);
         bassBoostSeekBar.setMax(1000);
 
-        virtualizerTitle.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        virtualizerTitle.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        virtualizerTitle.setPaintFlags(virtualizerTitle.getPaintFlags() | Paint.ANTI_ALIAS_FLAG | Paint.SUBPIXEL_TEXT_FLAG);
+		TextView[] titleTextViews = new TextView[] { virtualizerTitle, bassBoostTitle, reverbTitle };
+		textColor = UIElementsHelper.getSmallTextColor( mContext );
 
-        bassBoostTitle.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        bassBoostTitle.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        bassBoostTitle.setPaintFlags(bassBoostTitle.getPaintFlags() | Paint.ANTI_ALIAS_FLAG | Paint.SUBPIXEL_TEXT_FLAG);
-
-        reverbTitle.setTypeface(TypefaceHelper.getTypeface(mContext, "RobotoCondensed-Regular"));
-        reverbTitle.setTextColor(UIElementsHelper.getSmallTextColor(mContext));
-        reverbTitle.setPaintFlags(reverbTitle.getPaintFlags() | Paint.ANTI_ALIAS_FLAG | Paint.SUBPIXEL_TEXT_FLAG);
+		initTextViews( titleTextViews, fontFace, paintFlags, textColor );
 
         resetAllButton.setOnClickListener(new OnClickListener() {
 
             @Override
             public void onClick(View v) {
                 //Reset all sliders to 0.
-                equalizer50HzSeekBar.setProgressAndThumb(16);
-                equalizer130HzSeekBar.setProgressAndThumb(16);
-                equalizer320HzSeekBar.setProgressAndThumb(16);
-                equalizer800HzSeekBar.setProgressAndThumb(16);
-                equalizer2kHzSeekBar.setProgressAndThumb(16);
-                equalizer5kHzSeekBar.setProgressAndThumb(16);
-                equalizer12_5kHzSeekBar.setProgressAndThumb(16);
+				int defaultProgressSetting = 16;
+
+				for( int x = 0; x < equalizerSeekBars.length; x++ ) {
+					equalizerSeekBars[ x ].setProgressAndThumb( defaultProgressSetting );
+				}
+
                 virtualizerSeekBar.setProgress(0);
                 bassBoostSeekBar.setProgress(0);
                 reverbSpinner.setSelection(0, false);
@@ -310,9 +279,7 @@ public class EqualizerActivity extends FragmentActivity {
 
                 //Show a confirmation toast.
                 Toast.makeText(mContext, R.string.eq_reset, Toast.LENGTH_SHORT).show();
-
             }
-
         });
 
         loadPresetButton.setOnClickListener(new OnClickListener() {
@@ -335,13 +302,12 @@ public class EqualizerActivity extends FragmentActivity {
 
         });
 
-        equalizer50HzSeekBar.setOnSeekBarChangeListener(equalizer50HzListener);
-        equalizer130HzSeekBar.setOnSeekBarChangeListener(equalizer130HzListener);
-        equalizer320HzSeekBar.setOnSeekBarChangeListener(equalizer320HzListener);
-        equalizer800HzSeekBar.setOnSeekBarChangeListener(equalizer800HzListener);
-        equalizer2kHzSeekBar.setOnSeekBarChangeListener(equalizer2kHzListener);
-        equalizer5kHzSeekBar.setOnSeekBarChangeListener(equalizer5kHzListener);
-        equalizer12_5kHzSeekBar.setOnSeekBarChangeListener(equalizer12_5kHzListener);
+		OnSeekBarChangeListener[] listeners = new OnSeekBarChangeListener[] { equalizer50HzListener, equalizer130HzListener,
+				equalizer320HzListener, equalizer800HzListener, equalizer2kHzListener, equalizer5kHzListener, equalizer12_5kHzListener };
+
+		for( int x = 0; x < equalizerSeekBars.length; x++ ) {
+			equalizerSeekBars[ x ].setOnSeekBarChangeListener( listeners[ x ] );
+		}
 
         virtualizerSeekBar.setOnSeekBarChangeListener(virtualizerListener);
         bassBoostSeekBar.setOnSeekBarChangeListener(bassBoostListener);
@@ -356,394 +322,176 @@ public class EqualizerActivity extends FragmentActivity {
      * Sets the activity theme based on the user preference.
      */
     private void setTheme() {
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             if (mApp.getCurrentTheme()==Common.DARK_THEME) {
                 setTheme(R.style.AppThemeNoTranslucentNav);
-            } else {
+            }
+			else {
                 setTheme(R.style.AppThemeNoTranslucentNavLight);
             }
-
-        } else {
+        }
+		else {
             if (mApp.getCurrentTheme()==Common.DARK_THEME) {
                 setTheme(R.style.AppTheme);
-            } else {
+            }
+			else {
                 setTheme(R.style.AppThemeLight);
             }
-
         }
-
     }
-	
-	/**
-	 * 50 Hz equalizer seekbar listener.
-	 */
+
+	private String getDecibelSetting( int seekBarLevel ) {
+		int v;
+
+		if( seekBarLevel == 16 ) {
+			v = 0;
+		}
+		else if( seekBarLevel < 16 ) {
+			v = -1 * ( seekBarLevel == 0 ? 15 : ( 16 - seekBarLevel ));
+		}
+		else {
+			v = seekBarLevel - 16;
+		}
+
+		return Integer.toString( v ) + " dB";
+	}
+
+	private short getBandLevel( int seekBarLevel ) {
+		short v = 0; // seekBarLevel == 16 is 0
+
+		if( seekBarLevel < 16 ) {
+			v = (short)(-1 * ( seekBarLevel == 0 ? 1500 : ((16 - seekBarLevel) * 100)));
+		}
+		else if( seekBarLevel > 16 ) {
+			v = (short)((seekBarLevel - 16) * 100 );
+		}
+
+		return v;
+	}
+
+	private void setEqualizerBandLevel( short bandLevel, short otherValue ) {
+		mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel( bandLevel, otherValue );
+	}
+
+	private short getEqualizerBandLevel( int bandValue ) {
+		return mApp.getService().getEqualizerHelper().getCurrentEqualizer().getBand( bandValue );
+	}
+
+	private void updateGainListener( int seekBarLevel, int bandValue, TextView textView ) {
+		textView.setText( getDecibelSetting( seekBarLevel ));
+		setEqualizerBandLevel( getEqualizerBandLevel( bandValue ), (getBandLevel( seekBarLevel )));
+	}
+
 	private OnSeekBarChangeListener equalizer50HzListener = new OnSeekBarChangeListener() {
-
 		@Override
 		public void onProgressChanged(SeekBar arg0, int seekBarLevel, boolean changedByUser) {
-			
-			try {
-				//Get the appropriate equalizer band.
-				short sixtyHertzBand = mApp.getService().getEqualizerHelper().getCurrentEqualizer().getBand(50000);
-				
-				//Set the gain level text based on the slider position.
-				if (seekBarLevel==16) {
-					text50HzGainTextView.setText("0 dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(sixtyHertzBand, (short) 0);
-				} else if (seekBarLevel < 16) {
-					
-					if (seekBarLevel==0) {
-						text50HzGainTextView.setText("-" + "15 dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(sixtyHertzBand, (short) (-1500));
-					} else {
-						text50HzGainTextView.setText("-" + (16-seekBarLevel) + " dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(sixtyHertzBand, (short) -((16-seekBarLevel)*100));
-					}
-					
-				} else if (seekBarLevel > 16) {
-					text50HzGainTextView.setText("+" + (seekBarLevel-16) + " dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(sixtyHertzBand, (short) ((seekBarLevel-16)*100));
-				}
-				
-				fiftyHertzLevel = seekBarLevel;
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			
+			updateGainListener( seekBarLevel, HZ_50, text50HzGainTextView );
+			fiftyHertzLevel = seekBarLevel;
 		}
 
 		@Override
 		public void onStartTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onStopTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
-		
 	};
-	
-	/**
-	 * 130 Hz equalizer seekbar listener.
-	 */
+
 	private OnSeekBarChangeListener equalizer130HzListener = new OnSeekBarChangeListener() {
-
 		@Override
 		public void onProgressChanged(SeekBar arg0, int seekBarLevel, boolean changedByUser) {
-			
-			try {
-				//Get the appropriate equalizer band.
-				short twoThirtyHertzBand = mApp.getService().getEqualizerHelper().getCurrentEqualizer().getBand(130000);
-				
-				//Set the gain level text based on the slider position.
-				if (seekBarLevel==16) {
-					text130HzGainTextView.setText("0 dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(twoThirtyHertzBand, (short) 0);
-				} else if (seekBarLevel < 16) {
-					
-					if (seekBarLevel==0) {
-						text130HzGainTextView.setText("-" + "15 dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(twoThirtyHertzBand, (short) (-1500));
-					} else {
-						text130HzGainTextView.setText("-" + (16-seekBarLevel) + " dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(twoThirtyHertzBand, (short) -((16-seekBarLevel)*100));
-					}
-					
-				} else if (seekBarLevel > 16) {
-					text130HzGainTextView.setText("+" + (seekBarLevel-16) + " dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(twoThirtyHertzBand, (short) ((seekBarLevel-16)*100));
-				}
-				
-				oneThirtyHertzLevel = seekBarLevel;
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
+			updateGainListener( seekBarLevel, HZ_130, text130HzGainTextView );
+			oneThirtyHertzLevel = seekBarLevel;
 		}
 
 		@Override
 		public void onStartTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onStopTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
-		
 	};
 
-	/**
-	 * 320 Hz equalizer seekbar listener.
-	 */
 	private OnSeekBarChangeListener equalizer320HzListener = new OnSeekBarChangeListener() {
-
 		@Override
 		public void onProgressChanged(SeekBar arg0, int seekBarLevel, boolean changedByUser) {
-			
-			try {
-				//Get the appropriate equalizer band.
-				short nineTenHertzBand = mApp.getService().getEqualizerHelper().getCurrentEqualizer().getBand(320000);
-				
-				//Set the gain level text based on the slider position.
-				if (seekBarLevel==16) {
-					text320HzGainTextView.setText("0 dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(nineTenHertzBand, (short) 0);
-				} else if (seekBarLevel < 16) {
-					
-					if (seekBarLevel==0) {
-						text320HzGainTextView.setText("-" + "15 dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(nineTenHertzBand, (short) (-1500));
-					} else {
-						text320HzGainTextView.setText("-" + (16-seekBarLevel) + " dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(nineTenHertzBand, (short) -((16-seekBarLevel)*100));
-					}
-					
-				} else if (seekBarLevel > 16) {
-					text320HzGainTextView.setText("+" + (seekBarLevel-16) + " dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(nineTenHertzBand, (short) ((seekBarLevel-16)*100));
-				}
-				
-				threeTwentyHertzLevel = seekBarLevel;
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			
+			updateGainListener( seekBarLevel, HZ_320, text320HzGainTextView );
+			threeTwentyHertzLevel = seekBarLevel;
 		}
 
 		@Override
 		public void onStartTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onStopTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
-		
 	};
-	
-	/**
-	 * 800 Hz equalizer seekbar listener.
-	 */
+
 	private OnSeekBarChangeListener equalizer800HzListener = new OnSeekBarChangeListener() {
-
 		@Override
 		public void onProgressChanged(SeekBar arg0, int seekBarLevel, boolean changedByUser) {
-			
-			try {
-				//Get the appropriate equalizer band.
-				short threeKiloHertzBand = mApp.getService().getEqualizerHelper().getCurrentEqualizer().getBand(800000);
-				
-				//Set the gain level text based on the slider position.
-				if (seekBarLevel==16) {
-					text800HzGainTextView.setText("0 dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(threeKiloHertzBand, (short) 0);
-				} else if (seekBarLevel < 16) {
-					
-					if (seekBarLevel==0) {
-						text800HzGainTextView.setText("-" + "15 dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(threeKiloHertzBand, (short) (-1500));
-					} else {
-						text800HzGainTextView.setText("-" + (16-seekBarLevel) + " dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(threeKiloHertzBand, (short) -((16-seekBarLevel)*100));
-					}
-					
-				} else if (seekBarLevel > 16) {
-					text800HzGainTextView.setText("+" + (seekBarLevel-16) + " dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(threeKiloHertzBand, (short) ((seekBarLevel-16)*100));
-				}
-				
-				eightHundredHertzLevel = seekBarLevel;
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
+			updateGainListener( seekBarLevel, HZ_800, text800HzGainTextView );
+			eightHundredHertzLevel = seekBarLevel;
 		}
 
 		@Override
 		public void onStartTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onStopTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
-		
 	};
-	
-	/**
-	 * 2 kHz equalizer seekbar listener.
-	 */
+
 	private OnSeekBarChangeListener equalizer2kHzListener = new OnSeekBarChangeListener() {
-
 		@Override
 		public void onProgressChanged(SeekBar arg0, int seekBarLevel, boolean changedByUser) {
-			
-			try {
-				//Get the appropriate equalizer band.
-				short fourteenKiloHertzBand = mApp.getService().getEqualizerHelper().getCurrentEqualizer().getBand(2000000);
-				
-				//Set the gain level text based on the slider position.
-				if (seekBarLevel==16) {
-					text2kHzGainTextView.setText("0 dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(fourteenKiloHertzBand, (short) 0);
-				} else if (seekBarLevel < 16) {
-					
-					if (seekBarLevel==0) {
-						text2kHzGainTextView.setText("-" + "15 dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(fourteenKiloHertzBand, (short) (-1500));
-					} else {
-						text2kHzGainTextView.setText("-" + (16-seekBarLevel) + " dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(fourteenKiloHertzBand, (short) -((16-seekBarLevel)*100));
-					}
-					
-				} else if (seekBarLevel > 16) {
-					text2kHzGainTextView.setText("+" + (seekBarLevel-16) + " dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(fourteenKiloHertzBand, (short) ((seekBarLevel-16)*100));
-				}
-				
-				twoKilohertzLevel = seekBarLevel;
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			
+			updateGainListener( seekBarLevel, KHZ_2, text2kHzGainTextView );
+			twoKilohertzLevel = seekBarLevel;
 		}
 
 		@Override
 		public void onStartTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onStopTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
-		
 	};
-	
-	/**
-	 * 5 kHz equalizer seekbar listener.
-	 */
+
 	private OnSeekBarChangeListener equalizer5kHzListener = new OnSeekBarChangeListener() {
-
 		@Override
 		public void onProgressChanged(SeekBar arg0, int seekBarLevel, boolean changedByUser) {
-			
-			try {
-				//Get the appropriate equalizer band.
-				short fiveKiloHertzBand = mApp.getService().getEqualizerHelper().getCurrentEqualizer().getBand(5000000);
-				
-				//Set the gain level text based on the slider position.
-				if (seekBarLevel==16) {
-					text5kHzGainTextView.setText("0 dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(fiveKiloHertzBand, (short) 0);
-				} else if (seekBarLevel < 16) {
-					
-					if (seekBarLevel==0) {
-						text5kHzGainTextView.setText("-" + "15 dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(fiveKiloHertzBand, (short) (-1500));
-					} else {
-						text5kHzGainTextView.setText("-" + (16-seekBarLevel) + " dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(fiveKiloHertzBand, (short) -((16-seekBarLevel)*100));
-					}
-					
-				} else if (seekBarLevel > 16) {
-					text5kHzGainTextView.setText("+" + (seekBarLevel-16) + " dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(fiveKiloHertzBand, (short) ((seekBarLevel-16)*100));
-				}
-				
-				fiveKilohertzLevel = seekBarLevel;
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			
+			updateGainListener( seekBarLevel, KHZ_5, text5kHzGainTextView );
+			fiveKilohertzLevel = seekBarLevel;
 		}
 
 		@Override
 		public void onStartTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onStopTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
-		
 	};
-	
-	/**
-	 * 12.5 kHz equalizer seekbar listener.
-	 */
-	private OnSeekBarChangeListener equalizer12_5kHzListener = new OnSeekBarChangeListener() {
 
+	private OnSeekBarChangeListener equalizer12_5kHzListener = new OnSeekBarChangeListener() {
 		@Override
 		public void onProgressChanged(SeekBar arg0, int seekBarLevel, boolean changedByUser) {
-			
-			try {
-				//Get the appropriate equalizer band.
-				short twelvePointFiveKiloHertzBand = mApp.getService().getEqualizerHelper().getCurrentEqualizer().getBand(9000000);
-				
-				//Set the gain level text based on the slider position.
-				if (seekBarLevel==16) {
-					text12_5kHzGainTextView.setText("0 dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(twelvePointFiveKiloHertzBand, (short) 0);
-				} else if (seekBarLevel < 16) {
-					
-					if (seekBarLevel==0) {
-						text12_5kHzGainTextView.setText("-" + "15 dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(twelvePointFiveKiloHertzBand, (short) (-1500));
-					} else {
-						text12_5kHzGainTextView.setText("-" + (16-seekBarLevel) + " dB");
-						mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(twelvePointFiveKiloHertzBand, (short) -((16-seekBarLevel)*100));
-					}
-					
-				} else if (seekBarLevel > 16) {
-					text12_5kHzGainTextView.setText("+" + (seekBarLevel-16) + " dB");
-					mApp.getService().getEqualizerHelper().getCurrentEqualizer().setBandLevel(twelvePointFiveKiloHertzBand, (short) ((seekBarLevel-16)*100));
-				}
-				
-				twelvePointFiveKilohertzLevel = seekBarLevel;
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			
+			updateGainListener( seekBarLevel, KHZ_12_5, text12_5kHzGainTextView );
+			twelvePointFiveKilohertzLevel = seekBarLevel;
 		}
 
 		@Override
 		public void onStartTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onStopTrackingTouch(SeekBar arg0) {
-			// TODO Auto-generated method stub
-			
 		}
-		
 	};
 	
 	/**
@@ -753,31 +501,14 @@ public class EqualizerActivity extends FragmentActivity {
 
 		@Override
 		public void onItemSelected(AdapterView<?> arg0, View arg1, int index, long arg3) {
-			
-			if (mApp.isServiceRunning())
-				if (index==0) {
-					mApp.getService().getEqualizerHelper().getCurrentReverb().setPreset(PresetReverb.PRESET_NONE);
-					reverbSetting = 0;
-				} else if (index==1) {
-					mApp.getService().getEqualizerHelper().getCurrentReverb().setPreset(PresetReverb.PRESET_LARGEHALL);
-					reverbSetting = 1;
-				} else if (index==2) {
-					mApp.getService().getEqualizerHelper().getCurrentReverb().setPreset(PresetReverb.PRESET_LARGEROOM);
-					reverbSetting = 2;
-				} else if (index==3) {
-					mApp.getService().getEqualizerHelper().getCurrentReverb().setPreset(PresetReverb.PRESET_MEDIUMHALL);
-					reverbSetting = 3;
-				} else if (index==4) {
-					mApp.getService().getEqualizerHelper().getCurrentReverb().setPreset(PresetReverb.PRESET_MEDIUMROOM);
-					reverbSetting = 4;
-				} else if (index==5) {
-					mApp.getService().getEqualizerHelper().getCurrentReverb().setPreset(PresetReverb.PRESET_SMALLROOM);
-					reverbSetting = 5;
-				} else if (index==6) {
-					mApp.getService().getEqualizerHelper().getCurrentReverb().setPreset(PresetReverb.PRESET_PLATE);
-					reverbSetting = 6;
-				}
-			
+
+			short[] presets = new short[] { PresetReverb.PRESET_NONE, PresetReverb.PRESET_LARGEHALL, PresetReverb.PRESET_LARGEROOM,
+					PresetReverb.PRESET_MEDIUMHALL, PresetReverb.PRESET_MEDIUMROOM, PresetReverb.PRESET_SMALLROOM, PresetReverb.PRESET_PLATE };
+
+			if (mApp.isServiceRunning()) {
+				mApp.getService().getEqualizerHelper().getCurrentReverb().setPreset( presets[ index ] );
+				reverbSetting = index;
+			}
 			else
 				reverbSetting = 0;
 		}
@@ -785,9 +516,7 @@ public class EqualizerActivity extends FragmentActivity {
 		@Override
 		public void onNothingSelected(AdapterView<?> arg0) {
 			// TODO Auto-generated method stub
-			
 		}
-    	
     };
     
     /**
@@ -799,21 +528,17 @@ public class EqualizerActivity extends FragmentActivity {
 		public void onProgressChanged(SeekBar arg0, int arg1, boolean arg2) {
 			mApp.getService().getEqualizerHelper().getCurrentBassBoost().setStrength((short) arg1);
 			bassBoostLevel = (short) arg1;
-			
 		}
 
 		@Override
 		public void onStartTrackingTouch(SeekBar seekBar) {
 			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onStopTrackingTouch(SeekBar seekBar) {
 			// TODO Auto-generated method stub
-			
 		}
-	   
     };
     
     /**
@@ -830,15 +555,12 @@ public class EqualizerActivity extends FragmentActivity {
 		@Override
 		public void onStartTrackingTouch(SeekBar seekBar) {
 			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void onStopTrackingTouch(SeekBar seekBar) {
 			// TODO Auto-generated method stub
-			
 		}
-	   
     };
     
 	/**
@@ -935,7 +657,11 @@ public class EqualizerActivity extends FragmentActivity {
 				virtualizerLevel = cursor.getShort(cursor.getColumnIndex(DBAccessHelper.VIRTUALIZER));
 				bassBoostLevel = cursor.getShort(cursor.getColumnIndex(DBAccessHelper.BASS_BOOST));
 				reverbSetting = cursor.getShort(cursor.getColumnIndex(DBAccessHelper.REVERB));
-				
+
+				cursor.moveToPosition( which );
+
+				_equalizerData = new EqualizerData( cursor ); // todo: jake, see if there's a preset name.
+
 				//Save the new equalizer settings to the DB.
 				@SuppressWarnings({ "rawtypes" })
 				AsyncTask task = new AsyncTask() {
@@ -953,7 +679,6 @@ public class EqualizerActivity extends FragmentActivity {
 						//Reinitialize the UI elements to apply the new equalizer settings.
 						new AsyncInitSlidersTask().execute();
 					}
-					
 				};
 				task.execute();
 
@@ -964,70 +689,76 @@ public class EqualizerActivity extends FragmentActivity {
 			
 		}, DBAccessHelper.PRESET_NAME);
 
-        return builder.create();
-        
+		return builder.create();
+
 	}
-	
+
 	/**
 	 * Builds the "Apply To" dialog. Does not call the show() method, so you 
 	 * should do this manually when calling this method.
-	 * 
+	 *
 	 * @return A fully built AlertDialog reference.
 	 */
 	public AlertDialog buildApplyToDialog() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-        //Set the dialog title.
-        builder.setTitle(R.string.apply_to);
-        builder.setCancelable(false);
-        builder.setItems(R.array.apply_equalizer_to_array, new DialogInterface.OnClickListener() {
+		//Set the dialog title.
+		builder.setTitle(R.string.apply_to);
+		builder.setCancelable(false);
+		builder.setItems(R.array.apply_equalizer_to_array, new DialogInterface.OnClickListener() {
 
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				
+
 				if (which==0) {
 					setEQValuesForSong(mApp.getService().getCurrentSong().getId());
 					Toast.makeText(mContext, R.string.eq_applied_to_current_song, Toast.LENGTH_SHORT).show();
-					
+
 					//Finish this activity.
-                    finish();
-					
-				} else if (which==1) {	
+					finish();
+
+				}
+				else if (which==1) {
 					AsyncApplyEQToAllSongsTask task = new AsyncApplyEQToAllSongsTask(mContext, mFragment);
 					task.execute();
 					dialog.dismiss();
 
-                    //Finish this activity.
-                    finish();
+					//Finish this activity.
+					finish();
 
-				} else if (which==2) {
-					FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+				}
+				else if (which==2) {
 					EQArtistsListDialog artistDialog = new EQArtistsListDialog();
+					FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+//					artistDialog.show( getSupportFragmentManager().beginTransaction(), getDialogName( artistDialog ) );
+//					artistDialog.show( getSupportFragmentManager().beginTransaction(), "eqArtistsListDialog");
 					artistDialog.show(ft, "eqArtistsListDialog");
-					
+
 					dialog.dismiss();
 
-				} else if (which==3) {	
+				}
+				else if (which==3) {
 					FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
 					EQAlbumsListDialog albumsDialog = new EQAlbumsListDialog();
 					albumsDialog.show(ft, "eqAlbumsListDialog");
-					
+
 					dialog.dismiss();
 
-				} else if (which==4) {
+				}
+				else if (which==4) {
 					FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
 					EQGenresListDialog genresDialog = new EQGenresListDialog();
 					genresDialog.show(ft, "eqGenresListDialog");
-					
-					dialog.dismiss();
-					
-				}
-				
-			}
-        	
-        });
 
-        return builder.create(); 
+					dialog.dismiss();
+
+				}
+
+			}
+
+		});
+
+		return builder.create();
 	}
     
     /**
@@ -1062,11 +793,10 @@ public class EqualizerActivity extends FragmentActivity {
 									 			   		twoKilohertzLevel, 
 									 			   		fiveKilohertzLevel, 
 									 			   		twelvePointFiveKilohertzLevel, 
-									 			   		virtualizerLevel, 
+ 									 			   		virtualizerLevel,
 									 			   		bassBoostLevel, 
 									 			   		reverbSetting);
 		}
-
     }
 
     /**
@@ -1087,7 +817,6 @@ public class EqualizerActivity extends FragmentActivity {
 		virtualizerListener.onProgressChanged(virtualizerSeekBar, virtualizerSeekBar.getProgress(), true);
 		bassBoostListener.onProgressChanged(bassBoostSeekBar, bassBoostSeekBar.getProgress(), true);
 		reverbListener.onItemSelected(reverbSpinner, null, reverbSpinner.getSelectedItemPosition(), 0l);
-
     }
 	
 	/**
@@ -1100,13 +829,11 @@ public class EqualizerActivity extends FragmentActivity {
 	    public void onReceive(Context context, Intent intent) {
 			if (intent.hasExtra(Common.UPDATE_EQ_FRAGMENT)) {
 				new AsyncInitSlidersTask().execute();
-				
 			}
 
             if (intent.hasExtra(Common.SERVICE_STOPPING)) {
                 finish();
             }
-			
 		}
 		
 	};
@@ -1161,14 +888,12 @@ public class EqualizerActivity extends FragmentActivity {
 
 				if (state==true)
 					applyCurrentEQSettings();
-
 			}
 
 		});
 
         getActionBar().setHomeButtonEnabled(false);
         getActionBar().setDisplayHomeAsUpEnabled(false);
-
     }
 
     @Override
@@ -1192,7 +917,6 @@ public class EqualizerActivity extends FragmentActivity {
                 //Return false to allow the activity to handle the item click.
                 return false;
         }
-
     }
 
     @Override
@@ -1215,7 +939,6 @@ public class EqualizerActivity extends FragmentActivity {
 		//Initialize the broadcast manager that will listen for track changes.
     	LocalBroadcastManager.getInstance(mContext)
 		 					 .registerReceiver((mReceiver), new IntentFilter(Common.UPDATE_UI_BROADCAST));
-		
 	}
 	
 	@Override
@@ -1224,7 +947,6 @@ public class EqualizerActivity extends FragmentActivity {
 		
 		//Unregister the broadcast receivers.
     	LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mReceiver);
-	
 	}
 	
     /**
@@ -1249,7 +971,10 @@ public class EqualizerActivity extends FragmentActivity {
 		@Override
 		public void onPostExecute(Boolean result) {
 			super.onPostExecute(result);
-			
+
+			_equalizerData = new EqualizerData( eqValues );
+
+			// when _equalizerData is configured throughout this class, remove the following settings:
 			fiftyHertzLevel = eqValues[0];
 			oneThirtyHertzLevel = eqValues[1];
 			threeTwentyHertzLevel = eqValues[2];
@@ -1260,132 +985,59 @@ public class EqualizerActivity extends FragmentActivity {
 			virtualizerLevel = eqValues[7];
 			bassBoostLevel = eqValues[8];
 			reverbSetting = eqValues[9];
-			
-			//Move the sliders to the equalizer settings.
-			equalizer50HzSeekBar.setProgressAndThumb(fiftyHertzLevel);
-			equalizer130HzSeekBar.setProgressAndThumb(oneThirtyHertzLevel);
-			equalizer320HzSeekBar.setProgressAndThumb(threeTwentyHertzLevel);
-			equalizer800HzSeekBar.setProgressAndThumb(eightHundredHertzLevel);
-			equalizer2kHzSeekBar.setProgressAndThumb(twoKilohertzLevel);
-			equalizer5kHzSeekBar.setProgressAndThumb(fiveKilohertzLevel);
-			equalizer12_5kHzSeekBar.setProgressAndThumb(twelvePointFiveKilohertzLevel);
-	        virtualizerSeekBar.setProgress(virtualizerLevel);
-	        bassBoostSeekBar.setProgress(bassBoostLevel);
-	        reverbSpinner.setSelection(reverbSetting, false);
 
-			//50Hz Band.
-			if (fiftyHertzLevel==16) {
-				text50HzGainTextView.setText("0 dB");
-			} else if (fiftyHertzLevel < 16) {
-				
-				if (fiftyHertzLevel==0) {
-					text50HzGainTextView.setText("-" + "15 dB");
-				} else {
-					text50HzGainTextView.setText("-" + (16-fiftyHertzLevel) + " dB");
-				}
-				
-			} else if (fiftyHertzLevel > 16) {
-				text50HzGainTextView.setText("+" + (fiftyHertzLevel-16) + " dB");
+			VerticalSeekBar[] seekBars = new VerticalSeekBar[] { equalizer50HzSeekBar, equalizer130HzSeekBar, equalizer320HzSeekBar,
+					equalizer800HzSeekBar, equalizer2kHzSeekBar, equalizer5kHzSeekBar, equalizer12_5kHzSeekBar };
+
+			for( int x = 0; x < seekBars.length; x++ ) {
+				seekBars[ x ].setProgressAndThumb( eqValues[ x ] );
 			}
-			
-			//130Hz Band.
-			if (oneThirtyHertzLevel==16) {
-				text130HzGainTextView.setText("0 dB");
-			} else if (oneThirtyHertzLevel < 16) {
-				
-				if (oneThirtyHertzLevel==0) {
-					text130HzGainTextView.setText("-" + "15 dB");
-				} else {
-					text130HzGainTextView.setText("-" + (16-oneThirtyHertzLevel) + " dB");
-				}
-				
-			} else if (oneThirtyHertzLevel > 16) {
-				text130HzGainTextView.setText("+" + (oneThirtyHertzLevel-16) + " dB");
-			}
-			
-			//320Hz Band.
-			if (threeTwentyHertzLevel==16) {
-				text320HzGainTextView.setText("0 dB");
-			} else if (threeTwentyHertzLevel < 16) {
-				
-				if (threeTwentyHertzLevel==0) {
-					text320HzGainTextView.setText("-" + "15 dB");
-				} else {
-					text320HzGainTextView.setText("-" + (16-threeTwentyHertzLevel) + " dB");
-				}
-				
-			} else if (threeTwentyHertzLevel > 16) {
-				text320HzGainTextView.setText("+" + (threeTwentyHertzLevel-16) + " dB");
-			}
-			
-			//800Hz Band.
-			if (eightHundredHertzLevel==16) {
-				text800HzGainTextView.setText("0 dB");
-			} else if (eightHundredHertzLevel < 16) {
-				
-				if (eightHundredHertzLevel==0) {
-					text800HzGainTextView.setText("-" + "15 dB");
-				} else {
-					text800HzGainTextView.setText("-" + (16-eightHundredHertzLevel) + " dB");
-				}
-				
-			} else if (eightHundredHertzLevel > 16) {
-				text800HzGainTextView.setText("+" + (eightHundredHertzLevel-16) + " dB");
-			}
-			
-			//2kHz Band.
-			if (twoKilohertzLevel==16) {
-				text2kHzGainTextView.setText("0 dB");
-			} else if (twoKilohertzLevel < 16) {
-				
-				if (twoKilohertzLevel==0) {
-					text2kHzGainTextView.setText("-" + "15 dB");
-				} else {
-					text2kHzGainTextView.setText("-" + (16-twoKilohertzLevel) + " dB");
-				}
-				
-			} else if (twoKilohertzLevel > 16) {
-				text2kHzGainTextView.setText("+" + (twoKilohertzLevel-16) + " dB");
-			}
-			
-			//5kHz Band.
-			if (fiveKilohertzLevel==16) {
-				text5kHzGainTextView.setText("0 dB");
-			} else if (fiveKilohertzLevel < 16) {
-				
-				if (fiveKilohertzLevel==0) {
-					text5kHzGainTextView.setText("-" + "15 dB");
-				} else {
-					text5kHzGainTextView.setText("-" + (16-fiveKilohertzLevel) + " dB");
-				}
-				
-			} else if (fiveKilohertzLevel > 16) {
-				text5kHzGainTextView.setText("+" + (fiveKilohertzLevel-16) + " dB");
-			}
-			
-			//12.5kHz Band.
-			if (twelvePointFiveKilohertzLevel==16) {
-				text12_5kHzGainTextView.setText("0 dB");
-			} else if (twelvePointFiveKilohertzLevel < 16) {
-				
-				if (twelvePointFiveKilohertzLevel==0) {
-					text12_5kHzGainTextView.setText("-" + "15 dB");
-				} else {
-					text12_5kHzGainTextView.setText("-" + (16-twelvePointFiveKilohertzLevel) + " dB");
-				}
-				
-			} else if (twelvePointFiveKilohertzLevel > 16) {
-				text12_5kHzGainTextView.setText("+" + (twelvePointFiveKilohertzLevel-16) + " dB");
-			}
-			
+
+			virtualizerSeekBar.setProgress( _equalizerData.getVirtualizer() );
+			bassBoostSeekBar.setProgress( _equalizerData.getBassBoost() );
+			reverbSpinner.setSelection( _equalizerData.getReverb(), false );
+
+			drawEqualizerValue( text50HzGainTextView, _equalizerData.get50Hz() );
+			drawEqualizerValue( text130HzGainTextView, _equalizerData.get130Hz() );
+			drawEqualizerValue( text320HzGainTextView, _equalizerData.get320Hz() );
+			drawEqualizerValue( text800HzGainTextView, _equalizerData.get800Hz() );
+			drawEqualizerValue( text2kHzGainTextView, _equalizerData.get2Khz() );
+			drawEqualizerValue( text5kHzGainTextView, _equalizerData.get5Khz() );
+			drawEqualizerValue( text12_5kHzGainTextView, _equalizerData.get12Khz() );
 		}
-		
+
+		private void drawEqualizerValue( TextView textView, int eqLevel ) {
+			int value = -1;
+			String sign = ""; // default for eqLevel == 16, which is 0 dB.
+
+			if( eqLevel == 16 ) {
+				value = 0;
+			}
+			else if ( eqLevel < 16 ) {
+				value = ( eqLevel == 0 ? 15 : 16 - eqLevel );
+				sign = "-";
+			}
+			else if ( eqLevel > 16 ) {
+				value = eqLevel - 16;
+				sign = "+";
+			}
+
+			textView.setText( sign + value + " dB" );
+		}
 	}
 
     /**
      * Getter methods.
      */
-    
+
+	public EqualizerData getEqualizerData() {
+		return _equalizerData;
+	}
+
+	public void setEqualizerData( EqualizerData equalizerData ) {
+		_equalizerData = equalizerData;
+	}
+
 	public int getFiftyHertzLevel() {
 		return fiftyHertzLevel;
 	}
@@ -1473,5 +1125,4 @@ public class EqualizerActivity extends FragmentActivity {
 	public void setBassBoostLevel(int bassBoostLevel) {
 		this.bassBoostLevel = bassBoostLevel;
 	}
-    
 }

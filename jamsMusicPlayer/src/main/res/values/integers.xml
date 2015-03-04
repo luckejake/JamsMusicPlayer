@@ -20,4 +20,47 @@
     <integer name="artist_flipped_album_width">75</integer>
     <integer name="artist_flipped_album_height">75</integer>
     <integer name="google_play_services_version">4030500</integer>
+
+    <array name="controls_50Hz">
+        <item>@id/equalizer50Hz</item>
+        <item>@id/text50HzGain</item>
+        <item>@id/text50Hz</item>
+    </array>
+
+    <array name="controls_130Hz">
+        <item>@id/equalizer130Hz</item>
+        <item>@id/text130HzGain</item>
+        <item>@id/text130Hz</item>
+    </array>
+
+    <array name="controls_320Hz">
+        <item>@id/equalizer320Hz</item>
+        <item>@id/text320HzGain</item>
+        <item>@id/text320Hz</item>
+    </array>
+
+    <array name="controls_800Hz">
+        <item>@id/equalizer800Hz</item>
+        <item>@id/text800HzGain</item>
+        <item>@id/text800Hz</item>
+    </array>
+
+    <array name="controls_2kHz">
+        <item>@id/equalizer2kHz</item>
+        <item>@id/text2kHzGain</item>
+        <item>@id/text2kHz</item>
+    </array>
+
+    <array name="controls_5kHz">
+        <item>@id/equalizer5kHz</item>
+        <item>@id/text5kHzGain</item>
+        <item>@id/text5kHz</item>
+    </array>
+
+    <array name="controls_12_5kHz">
+        <item>@id/equalizer12_5kHz</item>
+        <item>@id/text12_5kHzGain</item>
+        <item>@id/text12_5kHz</item>
+    </array>
+
 </resources>
