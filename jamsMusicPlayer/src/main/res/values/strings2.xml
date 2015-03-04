@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="queue_type_artist">ARTIST</string>
+    <string name="queue_type_album_artist">ALBUM ARTIST</string>
+    <string name="queue_type_album">ALBUM</string>
+    <string name="queue_type_playlist">PLAYLIST</string>
+    <string name="queue_type_genre">GENRE</string>
+    <string name="queue_type_song">SONG</string>
+    <string name="queue_type_album_by_album_artist">ALBUM_BY_ALBUM_ARTIST</string>
+
+    <string-array name="queue_types">
+        <item>@string/queue_type_artist</item>
+        <item>@string/queue_type_album_artist</item>
+        <item>@string/queue_type_album</item>
+        <item>@string/queue_type_playlist</item>
+        <item>@string/queue_type_genre</item>
+        <item>@string/queue_type_song</item>
+        <item>@string/queue_type_album_by_album_artist</item>
+    </string-array>
+
+    <string name="extra_play_all">PLAY_ALL</string>
+    <string name="extra_artist">ARTIST</string>
+    <string name="extra_calling_fragment">CALLING_FRAGMENT</string>
+    <string name="extra_artists_flipped_fragment">ARTISTS_FLIPPED_FRAGMENT</string>
+
+    <string-array name="progress_update_artist">
+        <item>@string/extra_play_all</item>
+        <item>@string/extra_artist</item>
+        <item>@string/extra_calling_fragment</item>
+        <item>@string/extra_artists_flipped_fragment</item>
+    </string-array>
+
+    <string name="extra_album_artist">ALBUM_ARTIST</string>
+    <string name="extra_album_artists_flipped_fragment">ALBUM_ARTISTS_FLIPPED_FRAGMENT</string>
+
+    <string-array name="progress_update_album_artist">
+        <item>@string/extra_play_all</item>
+        <item>@string/extra_album_artist</item>
+        <item>@string/extra_calling_fragment</item>
+        <item>@string/extra_album_artists_flipped_fragment</item>
+    </string-array>
+
+    <string name="extra_album">ALBUM</string>
+    <string name="extra_albums_flipped_fragment">ALBUMS_FLIPPED_FRAGMENT</string>
+
+    <string-array name="progress_update_album">
+        <item>@string/extra_play_all</item>
+        <item>@string/extra_album</item>
+        <item>@string/extra_calling_fragment</item>
+        <item>@string/extra_albums_flipped_fragment</item>
+    </string-array>
+
+    <string name="extra_playlists_flipped_fragment">PLAYLISTS_FLIPPED_FRAGMENT</string>
+    <string name="extra_playlist_name">PLAYLIST_NAME</string>
+
+    <string-array name="progress_update_playlist">
+        <item>@string/extra_calling_fragment</item>
+        <item>@string/extra_playlists_flipped_fragment</item>
+        <item>@string/extra_playlist_name</item>
+    </string-array>
+
+    <string name="extra_genre">GENRE</string>
+    <string name="extra_genres_flipped_fragment">GENRES_FLIPPED_FRAGMENT</string>
+
+    <string-array name="progress_update_genre">
+        <item>@string/extra_play_all</item>
+        <item>@string/extra_genre</item>
+        <item>@string/extra_calling_fragment</item>
+        <item>@string/extra_genres_flipped_fragment</item>
+    </string-array>
+
+    <string name="extra_songs_fragment">SONGS_FRAGMENT</string>
+    <string name="extra_searched">SONGS_SEARCHED</string>
+
+    <string-array name="progress_update_song">
+        <item>@string/extra_calling_fragment</item>
+        <item>@string/extra_songs_fragment</item>
+        <item>@string/extra_searched</item>
+    </string-array>
+
+    <string name="extra_album_artists_flipped_songs_fragment">ALBUM_ARTISTS_FLIPPED_SONGS_FRAGMENT</string>
+
+    <string-array name="progress_update_album_by_album_artist">
+        <item>@string/extra_calling_fragment</item>
+        <item>@string/extra_album_artists_flipped_songs_fragment</item>
+        <item>@string/extra_play_all</item>
+        <item>@string/extra_album</item>
+    </string-array>
+
+    <string name="music_extension_mp3">mp3</string>
+    <string name="music_extension_3gp">3gp</string>
+    <string name="music_extension_mp4">mp4</string>
+    <string name="music_extension_m4a">m4a</string>
+    <string name="music_extension_aac">aac</string>
+    <string name="music_extension_ts">ts</string>
+    <string name="music_extension_flac">flac</string>
+    <string name="music_extension_mid">mid</string>
+    <string name="music_extension_xmf">xmf</string>
+    <string name="music_extension_mxmf">mxmf</string>
+    <string name="music_extension_midi">midi</string>
+    <string name="music_extension_rtttl">rtttl</string>
+    <string name="music_extension_rtx">rtx</string>
+    <string name="music_extension_ota">ota</string>
+    <string name="music_extension_imy">imy</string>
+    <string name="music_extension_ogg">ogg</string>
+    <string name="music_extension_mkv">mkv</string>
+    <string name="music_extension_wav">wav</string>
+
+    <string-array name="extensions_file_music">
+        <item>@string/music_extension_mp3</item>
+        <item>@string/music_extension_3gp</item>
+        <item>@string/music_extension_mp4</item>
+        <item>@string/music_extension_m4a</item>
+        <item>@string/music_extension_aac</item>
+        <item>@string/music_extension_ts</item>
+        <item>@string/music_extension_flac</item>
+        <item>@string/music_extension_mid</item>
+        <item>@string/music_extension_xmf</item>
+        <item>@string/music_extension_mxmf</item>
+        <item>@string/music_extension_midi</item>
+        <item>@string/music_extension_rtttl</item>
+        <item>@string/music_extension_rtx</item>
+        <item>@string/music_extension_ota</item>
+        <item>@string/music_extension_imy</item>
+        <item>@string/music_extension_ogg</item>
+        <item>@string/music_extension_mkv</item>
+        <item>@string/music_extension_wav</item>
+    </string-array>
+
+    <string name="image_extension_jpg">jpg</string>
+    <string name="image_extension_gif">gif</string>
+    <string name="image_extension_png">png</string>
+    <string name="image_extension_bmp">bmp</string>
+    <string name="image_extension_webp">webp</string>
+
+    <string-array name="extensions_file_images">
+        <item>@string/image_extension_jpg</item>
+        <item>@string/image_extension_gif</item>
+        <item>@string/image_extension_png</item>
+        <item>@string/image_extension_bmp</item>
+        <item>@string/image_extension_webp</item>
+    </string-array>
+
+    <string name="video_extension_3gp">3gp</string>
+    <string name="video_extension_mp4">mp4</string>
+    <string name="video_extension_ts">ts</string>
+    <string name="video_extension_webm">webm</string>
+    <string name="video_extension_mkv">mkv</string>
+
+    <string-array name="extensions_file_videos">
+        <item>@string/video_extension_3gp</item>
+        <item>@string/video_extension_mp4</item>
+        <item>@string/video_extension_ts</item>
+        <item>@string/video_extension_webm</item>
+        <item>@string/video_extension_mkv</item>
+    </string-array>
+
+    <string name="file_path_emulated_0">/storage/emulated/0</string>
+    <string name="file_path_emulated_0_term">/storage/emulated/0/</string>
+    <string name="file_path_legacy">/storage/emulated/legacy</string>
+    <string name="file_path_legacy_term">/storage/emulated/legacy/</string>
+    <string name="file_path_sdcard0">/storage/sdcard0</string>
+    <string name="file_path_sdcard0_term">/storage/sdcard0/</string>
+    <string name="file_path_sdcard">/sdcard</string>
+    <string name="file_path_sdcard_term">/sdcard/</string>
+    <string name="file_path_mnt_sdcard">/mnt/sdcard</string>
+    <string name="file_path_mnt_sdcard_term">/mnt/sdcard/</string>
+
+
+    <string-array name="valid_file_paths">
+        <item>@string/file_path_emulated_0</item>
+        <item>@string/file_path_emulated_0_term</item>
+        <item>@string/file_path_legacy</item>
+        <item>@string/file_path_legacy_term</item>
+        <item>@string/file_path_sdcard0</item>
+        <item>@string/file_path_sdcard0_term</item>
+        <item>@string/file_path_sdcard</item>
+        <item>@string/file_path_sdcard_term</item>
+        <item>@string/file_path_mnt_sdcard</item>
+        <item>@string/file_path_mnt_sdcard_term</item>
+    </string-array>
+
+    <string name="abbrev_terrabytes">TB</string>
+    <string name="abbrev_gigabytes">GB</string>
+    <string name="abbrev_megabytes">MB</string>
+    <string name="abbrev_kilobytes">KB</string>
+    <string name="abbrev_bytes">bytes</string>
+
+
+    <string-array name="file_size_abbrevs">
+        <item>@string/abbrev_terrabytes</item>
+        <item>@string/abbrev_gigabytes</item>
+        <item>@string/abbrev_megabytes</item>
+        <item>@string/abbrev_kilobytes</item>
+        <item>@string/abbrev_bytes</item>
+    </string-array>
+</resources>
